@@ -1,19 +1,10 @@
 (system-include "time.h")
 (system-include "threads.h")
-(relative-include "thing.h")
+(relative-include "test.c")
 (add-cflag "-lpthread")
 
 (register-type Thread "thrd_t")
 (register-type Mutex "mtx_t")
-
-(register-type Time "time_t")
-(register-type TimeSpec "struct timespec" [tv_sec Time tv_nsec Long])
-
-(defmodule Time
-  (register UTC Int "UTC_TIME")
-  (doc get "Populates the given TimeSpec with the current calendar time in the time base specified")
-  (register get (Fn [(Ptr TimeSpec) Int] Int))
-)
 
 (defmodule Thread
   (register get (Fn [] Thread) "get_thread")
@@ -23,15 +14,33 @@
   (register no-memory Int "thrd_nomem")
   (register error Int "thrd_error")
 
-  (register create (Fn [(Ptr Thread) (Fn [(Ptr ())] Int) (Ptr ())] Int) "thrd_create")
+  (private create-internal)
+  (register create-internal (Fn [(Fn [(Ptr ())] Int) (Ptr ()) (Ptr Int)] Thread) "carp_thrd_create")
+  (doc create "Start a thread running the given function.")
+  (sig create (Fn [(Fn [(Ptr ())] Int) (Ptr ())] (Result Thread Int)))
+  (defn create [func arg]
+    (let [result 0
+          thread (create-internal func arg (address result))]
+      (if (= result success)
+        (Result.Success thread)
+        (Result.Error result))))
+
+  (doc from-fn "Start a thread running the given lambda function")
+  (register from-fn-internal (Fn [(Fn [(Ptr ())] Int) (Ptr ()) (Ptr Int)] Thread) "carp_thrd_fn_create")
+  (defn from-fn [func arg]
+    (let [result 0
+          thread (from-fn-internal func arg (address result))]
+      (if (= result success)
+        (Result.Success thread)
+        (Result.Error result))))
+
   (register equal (Fn [Thread Thread] Int) "thrd_equal")
   (doc current "Get the current thread")
   (register current (Fn [] Thread) "thrd_current")
   (doc sleep
-       "Block the current thread's execution for at least the duration given by the first argument.
-The thread may resume eariler. If the second argument is not null, the remaining time is
-stored in the second argument.")
-  (register sleep (Fn [(Ptr TimeSpec) (Ptr TimeSpec)] Int) "thrd_sleep")
+       "Block the current thread's execution for at least the given time. (seconds nanoseconds)
+If there is an error or interrupting signal, the return value will be less than 0")
+  (register sleep (Fn [Long Long] Int) "carp_thrd_sleep")
   (register yield (Fn [] ()) "thrd_yield")
   (register exit (Fn [] Int) "thrd_exit")
   (register detach (Fn [Thread] Int) "thrd_detach")
