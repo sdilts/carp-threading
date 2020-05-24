@@ -1,5 +1,41 @@
-(defmodule MyMod
-  (defn myfun [] ())
+(system-include "time.h")
+(system-include "threads.h")
+(relative-include "thing.h")
+(add-cflag "-lpthread")
+
+(register-type Thread "thrd_t")
+(register-type Mutex "mtx_t")
+
+(register-type Time "time_t")
+(register-type TimeSpec "struct timespec" [tv_sec Time tv_nsec Long])
+
+(defmodule Time
+  (register UTC Int "UTC_TIME")
+  (doc get "Populates the given TimeSpec with the current calendar time in the time base specified")
+  (register get (Fn [(Ptr TimeSpec) Int] Int))
 )
 
-(macro-error "TODO: implement me!")
+(defmodule Thread
+  (register get (Fn [] Thread) "get_thread")
+  (register success Int "thrd_success")
+  (register timed-out Int "thrd_timedout")
+  (register busy Int "thrd_busy")
+  (register no-memory Int "thrd_nomem")
+  (register error Int "thrd_error")
+
+  (register create (Fn [(Ptr Thread) (Fn [(Ptr ())] Int) (Ptr ())] Int) "thrd_create")
+  (register equal (Fn [Thread Thread] Int) "thrd_equal")
+  (doc current "Get the current thread")
+  (register current (Fn [] Thread) "thrd_current")
+  (doc sleep
+       "Block the current thread's execution for at least the duration given by the first argument.
+The thread may resume eariler. If the second argument is not null, the remaining time is
+stored in the second argument.")
+  (register sleep (Fn [(Ptr TimeSpec) (Ptr TimeSpec)] Int) "thrd_sleep")
+  (register yield (Fn [] ()) "thrd_yield")
+  (register exit (Fn [] Int) "thrd_exit")
+  (register detach (Fn [Thread] Int) "thrd_detach")
+  (register join (Fn [Thread (Ptr Int)] Int) "thrd_join"))
+
+(defmodule Mutex
+  (register init (Fn [(Ptr Mutex) Int] Int) "mtx_init"))
