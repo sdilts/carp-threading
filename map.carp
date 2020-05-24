@@ -1,0 +1,22 @@
+(load "main.carp")
+
+(sig run-callback (Fn [&(Array a) (Ptr (Array a)) &(Fn [&a] a) Int Int] Int))
+(defn run-callback [arr result func start end]
+  (let-do [callback (fn [dest]
+                   (do
+                     (for [i start end]
+                         (Array.aset-uninitialized! (Unsafe.coerce dest) i
+                                                    (~func (Array.unsafe-nth arr i))))
+                       0))
+           thread (Thread.get)
+           return-val (Thread.create (address thread) callback (Unsafe.coerce result))]
+    (Thread.join thread (address return-val))))
+
+(sig test (Fn [] (Array Double)))
+(defn test []
+  (let [arr [1.0 2.0 3.0 4.0]
+        dest (Array.allocate 4)
+        start 0
+        end 4
+        success (run-callback &arr (address dest) &(fn [x] (* 2.0 (copy x))) start end)]
+    dest))
