@@ -26,7 +26,7 @@
         (Result.Error result))))
 
   (doc from-fn "Start a thread running the given lambda function")
-  (register from-fn-internal (Fn [(Fn [(Ptr ())] Int) (Ptr ()) (Ptr Int)] Thread) "carp_thrd_fn_create")
+  (register from-fn-internal (Fn [&(Fn [(Ptr ())] Int) (Ptr ()) (Ptr Int)] Thread) "carp_thrd_fn_create")
   (defn from-fn [func arg]
     (let [result 0
           thread (from-fn-internal func arg (address result))]

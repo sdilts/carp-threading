@@ -9,7 +9,7 @@
                                                      i (~func (Array.unsafe-nth arr i))))
                         0))
            return-val 0
-           thread (Thread.from-fn callback (Unsafe.coerce result))]
+           thread (Thread.from-fn &callback (Unsafe.coerce result))]
     (match thread
       (Result.Success thrd) (Thread.join thrd (address return-val))
       (Result.Error err) err)))
